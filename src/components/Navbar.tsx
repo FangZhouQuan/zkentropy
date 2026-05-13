@@ -22,6 +22,9 @@ export default function Navbar() {
           <Link className="text-sm text-gray-400 transition-colors hover:text-white" href="/#mint">
             {t(locale, "nav_mint")}
           </Link>
+          <Link className="text-sm text-gray-400 transition-colors hover:text-white" href="/#history">
+            {t(locale, "nav_history")}
+          </Link>
           <Link className="text-sm text-gray-400 transition-colors hover:text-white" href="/#how">
             {t(locale, "nav_docs")}
           </Link>

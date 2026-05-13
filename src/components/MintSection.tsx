@@ -1,17 +1,89 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useEffect, useMemo, useState } from "react";
+import { parseEther } from "viem";
+import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { useLocale } from "@/app/providers";
-import { BASE_TOKENS_PER_MINT, MAX_MINTS, MINT_PRICE, TIERS } from "@/lib/contract";
+import { requestMint, type MintApiResponse } from "@/lib/api";
+import { BASE_TOKENS_PER_MINT, CONTRACT_ADDRESS, MAX_MINTS, MINT_PRICE, TIERS, ZKE_ABI } from "@/lib/contract";
 import { t } from "@/lib/i18n";
 
-export default function MintSection({ totalMinted = 0 }: { totalMinted?: number }) {
+type MintStatus = "idle" | "proving" | "sending" | "confirming" | "success" | "error";
+
+export default function MintSection({
+  totalMinted = 0,
+  onMintComplete,
+}: {
+  totalMinted?: number;
+  onMintComplete?: () => void;
+}) {
   const { locale } = useLocale();
-  const { isConnected } = useAccount();
-  const [isProving, setIsProving] = useState(false);
+  const { address, isConnected } = useAccount();
+  const [status, setStatus] = useState<MintStatus>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [proofResult, setProofResult] = useState<MintApiResponse | null>(null);
   const soldOut = totalMinted >= MAX_MINTS;
+  const isBusy = status === "proving" || status === "sending" || status === "confirming";
+  const { writeContractAsync, data: txHash, isPending } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (txHash && (isConfirming || status === "sending")) {
+      setStatus("confirming");
+    }
+  }, [isConfirming, status, txHash]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      setStatus("success");
+      onMintComplete?.();
+    }
+  }, [isSuccess, onMintComplete]);
+
+  const statusCopy = useMemo(() => {
+    if (status === "proving") return t(locale, "mint_status_proving");
+    if (status === "sending" || isPending) return t(locale, "mint_status_sending");
+    if (status === "confirming") return t(locale, "mint_status_confirming");
+    if (status === "success") return t(locale, "mint_status_success");
+    if (status === "error") return t(locale, "mint_status_error");
+    return "";
+  }, [isPending, locale, status]);
+
+  async function handleMint() {
+    if (!address) return;
+
+    try {
+      setError(null);
+      setProofResult(null);
+      setStatus("proving");
+
+      const salt = Math.floor(Math.random() * 2 ** 32).toString();
+      const result = await requestMint(address, salt);
+      setProofResult(result);
+      setStatus("sending");
+
+      await writeContractAsync({
+        address: CONTRACT_ADDRESS,
+        abi: ZKE_ABI,
+        functionName: "mint",
+        args: [
+          toUintTuple(result.proof.a),
+          [
+            toUintTuple(result.proof.b[0]),
+            toUintTuple(result.proof.b[1]),
+          ],
+          toUintTuple(result.proof.c),
+          BigInt(result.publicSignals[0] ?? result.entropy),
+          BigInt(result.publicSignals[1] ?? result.tier),
+        ],
+        value: parseEther("0.0025"),
+      });
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Mint failed");
+    }
+  }
 
   return (
     <section id="mint" className="px-6 py-20">
@@ -33,6 +105,7 @@ export default function MintSection({ totalMinted = 0 }: { totalMinted?: number 
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
+            {status === "success" && <Confetti />}
             <div className="pointer-events-none absolute right-0 top-0 h-36 w-36 rounded-bl-full bg-gradient-to-bl from-[#5c7cfa]/16 to-transparent" />
 
             <div className="relative z-10">
@@ -51,6 +124,30 @@ export default function MintSection({ totalMinted = 0 }: { totalMinted?: number 
                 </div>
               </div>
 
+              {status !== "idle" && (
+                <div className="mb-5 rounded-xl border border-white/5 bg-white/[0.03] p-4">
+                  <div className="flex items-center gap-3">
+                    {isBusy && <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#748ffc] border-t-transparent" />}
+                    <span className={status === "error" ? "text-sm font-medium text-[#ff6b6b]" : "text-sm font-medium text-white"}>
+                      {statusCopy}
+                    </span>
+                  </div>
+
+                  {status === "sending" && <p className="mt-2 text-xs text-gray-500">{t(locale, "mint_wallet_prompt")}</p>}
+                  {status === "confirming" && <p className="mt-2 text-xs text-gray-500">{t(locale, "mint_confirm_prompt")}</p>}
+
+                  {status === "success" && proofResult && (
+                    <div className="mt-3 rounded-lg bg-[#1A1B1E] p-3 text-sm text-gray-300">
+                      <span className="text-lg">{tierSymbol(proofResult.tier)}</span>{" "}
+                      {t(locale, "mint_result_prefix")}{" "}
+                      <span className="font-mono text-primary-400">{proofResult.tokens.toLocaleString()} ZKE</span>
+                    </div>
+                  )}
+
+                  {status === "error" && error && <p className="mt-2 text-xs text-[#ff8787]">{error}</p>}
+                </div>
+              )}
+
               {soldOut ? (
                 <button className="h-13 w-full rounded-xl bg-[#25262B] px-5 py-4 font-semibold text-gray-500" disabled type="button">
                   {t(locale, "mint_sold_out")}
@@ -59,17 +156,18 @@ export default function MintSection({ totalMinted = 0 }: { totalMinted?: number 
                 <button className="h-13 w-full rounded-xl bg-[#25262B] px-5 py-4 font-semibold text-gray-500" disabled type="button">
                   {t(locale, "mint_connect_first")}
                 </button>
+              ) : status === "error" ? (
+                <button type="button" onClick={handleMint} className="btn-glow h-13 w-full rounded-xl px-5 py-4 font-semibold text-white">
+                  {t(locale, "mint_retry")}
+                </button>
               ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsProving(true);
-                    window.setTimeout(() => setIsProving(false), 1800);
-                  }}
-                  disabled={isProving}
+                  onClick={handleMint}
+                  disabled={isBusy}
                   className="btn-glow h-13 w-full rounded-xl px-5 py-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isProving ? t(locale, "mint_btn_loading") : t(locale, "mint_btn")}
+                  {isBusy ? statusCopy : t(locale, "mint_btn")}
                 </button>
               )}
             </div>
@@ -105,5 +203,34 @@ export default function MintSection({ totalMinted = 0 }: { totalMinted?: number 
         </div>
       </div>
     </section>
+  );
+}
+
+function toUintTuple(values: [string, string]): [bigint, bigint] {
+  return [BigInt(values[0]), BigInt(values[1])];
+}
+
+function tierSymbol(tier: number): string {
+  return TIERS[tier]?.emoji ?? "-";
+}
+
+function Confetti() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {Array.from({ length: 14 }).map((_, index) => (
+        <motion.span
+          key={index}
+          className="absolute h-2 w-2 rounded-full bg-primary-400"
+          initial={{ opacity: 0, x: "50%", y: "50%", scale: 0.4 }}
+          animate={{
+            opacity: [0, 1, 0],
+            x: `${20 + index * 5}%`,
+            y: `${10 + (index % 5) * 16}%`,
+            scale: [0.4, 1, 0.6],
+          }}
+          transition={{ duration: 1.4, delay: index * 0.03 }}
+        />
+      ))}
+    </div>
   );
 }
