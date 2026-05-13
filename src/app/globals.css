@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0a0b0d;
+  --bg-card: #16171f;
+  --border-subtle: rgba(92, 124, 250, 0.1);
+  --border-active: rgba(92, 124, 250, 0.3);
+}
+
+body {
+  background: var(--bg-primary);
+  color: #e4e5e7;
+}
+
+.bg-mesh {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(92, 124, 250, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(132, 94, 247, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(34, 184, 207, 0.04) 0%, transparent 50%),
+    var(--bg-primary);
+}
+
+.glass-card {
+  background: rgba(22, 23, 31, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  transition: border-color 0.3s;
+}
+.glass-card:hover { border-color: var(--border-active); }
+
+.btn-glow {
+  background: linear-gradient(135deg, #5c7cfa 0%, #845ef7 100%);
+  box-shadow: 0 4px 20px rgba(92, 124, 250, 0.3);
+  transition: all 0.3s ease;
+}
+.btn-glow:hover {
+  box-shadow: 0 4px 30px rgba(92, 124, 250, 0.5);
+  transform: translateY(-1px);
+}
+
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(92, 124, 250, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(92, 124, 250, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #5c7cfa, #845ef7, #22b8cf);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.tier-0 { color: #4dabf7; }
+.tier-1 { color: #51cf66; }
+.tier-2 { color: #ced4da; }
+.tier-3 { color: #fcc419; }
+.tier-4 { color: #ff922b; }
+.tier-5 { color: #ff6b6b; }
