@@ -1,6 +1,7 @@
 "use client";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import Link from "next/link";
 import { useLocale } from "@/app/providers";
 import { t } from "@/lib/i18n";
 
@@ -10,20 +11,23 @@ export default function Navbar() {
   return (
     <nav className="fixed left-0 right-0 top-0 z-50 border-b border-white/5 bg-[#0a0b0d]/78 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <a href="#" className="flex min-w-0 items-center gap-3">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#5c7cfa] to-[#845ef7] text-sm font-bold text-white shadow-[0_0_28px_rgba(92,124,250,0.34)]">
             ZK
           </span>
           <span className="truncate text-lg font-semibold tracking-tight text-white">ZKEntropy</span>
-        </a>
+        </Link>
 
         <div className="hidden items-center gap-8 md:flex">
-          <a className="text-sm text-gray-400 transition-colors hover:text-white" href="#mint">
+          <Link className="text-sm text-gray-400 transition-colors hover:text-white" href="/#mint">
             {t(locale, "nav_mint")}
-          </a>
-          <a className="text-sm text-gray-400 transition-colors hover:text-white" href="#how">
+          </Link>
+          <Link className="text-sm text-gray-400 transition-colors hover:text-white" href="/#how">
             {t(locale, "nav_docs")}
-          </a>
+          </Link>
+          <Link className="text-sm text-gray-400 transition-colors hover:text-white" href="/whitepaper">
+            {t(locale, "nav_whitepaper")}
+          </Link>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
