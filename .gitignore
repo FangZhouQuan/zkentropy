@@ -25,9 +25,20 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
+!backend/.env.example
 
 # vercel
 .vercel
+
+# backend
+backend/node_modules/
+backend/dist/
+backend/data/*.db
+backend/data/*.sqlite
+backend/data/*.sqlite3
+backend/circuits/*.wasm
+backend/circuits/*.zkey
 
 # typescript
 *.tsbuildinfo
