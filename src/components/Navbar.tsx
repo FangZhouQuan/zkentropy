@@ -1,43 +1,61 @@
-'use client';
+"use client";
 
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useLocale } from '@/app/providers';
-import { t } from '@/lib/i18n';
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useLocale } from "@/app/providers";
+import { t } from "@/lib/i18n";
 
 export default function Navbar() {
   const { locale, setLocale } = useLocale();
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#0a0b0d]/80 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5c7cfa] to-[#845ef7] flex items-center justify-center">
-            <span className="text-white font-bold text-sm">ZK</span>
-          </div>
-          <span className="font-semibold text-lg tracking-tight text-white">ZKEntropy</span>
+    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-white/5 bg-[#0a0b0d]/78 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <a href="#" className="flex min-w-0 items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#5c7cfa] to-[#845ef7] text-sm font-bold text-white shadow-[0_0_28px_rgba(92,124,250,0.34)]">
+            ZK
+          </span>
+          <span className="truncate text-lg font-semibold tracking-tight text-white">ZKEntropy</span>
+        </a>
+
+        <div className="hidden items-center gap-8 md:flex">
+          <a className="text-sm text-gray-400 transition-colors hover:text-white" href="#mint">
+            {t(locale, "nav_mint")}
+          </a>
+          <a className="text-sm text-gray-400 transition-colors hover:text-white" href="#how">
+            {t(locale, "nav_docs")}
+          </a>
         </div>
-        <div className="hidden md:flex items-center gap-8">
-          <a href="#mint" className="text-sm text-gray-400 hover:text-white transition-colors">Mint</a>
-          <a href="#how" className="text-sm text-gray-400 hover:text-white transition-colors">Docs</a>
-        </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
-            onClick={() => setLocale(locale === 'en' ? 'zh' : 'en')}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-white/10 hover:border-white/20 text-gray-400 hover:text-white transition-all"
+            type="button"
+            onClick={() => setLocale(locale === "en" ? "zh" : "en")}
+            className="h-9 rounded-lg border border-white/10 px-3 text-xs font-medium text-gray-300 transition-all hover:border-white/20 hover:text-white"
           >
-            {locale === 'en' ? '中文' : 'EN'}
+            {locale === "en" ? "中文" : "EN"}
           </button>
+
           <ConnectButton.Custom>
-            {({ account, chain, openConnectModal, openAccountModal, mounted }) => {
+            {({ account, chain, mounted, openAccountModal, openConnectModal }) => {
               const connected = mounted && account && chain;
+
               return (
-                <div {...(!mounted && { style: { opacity: 0, pointerEvents: 'none' as const } })}>
-                  {!connected ? (
-                    <button onClick={openConnectModal} className="btn-glow px-4 py-2 rounded-xl text-sm font-medium text-white">
-                      {t(locale, 'nav_connect')}
+                <div {...(!mounted && { "aria-hidden": true, style: { opacity: 0, pointerEvents: "none" as const } })}>
+                  {connected ? (
+                    <button
+                      type="button"
+                      onClick={openAccountModal}
+                      className="h-9 rounded-lg border border-white/10 bg-[#25262B] px-3 text-sm font-medium text-white transition-colors hover:border-white/20"
+                    >
+                      {account.displayName}
                     </button>
                   ) : (
-                    <button onClick={openAccountModal} className="px-4 py-2 rounded-xl text-sm font-medium bg-[#25262B] border border-white/10 text-white">
-                      {account.displayName}
+                    <button
+                      type="button"
+                      onClick={openConnectModal}
+                      className="btn-glow h-9 rounded-lg px-3 text-sm font-semibold text-white sm:px-4"
+                    >
+                      {t(locale, "nav_connect")}
                     </button>
                   )}
                 </div>
